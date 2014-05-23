@@ -9,7 +9,7 @@ module Spree
       def index
 
         unless params[:order_number].blank?
-           order = Spree::Order.find(params[:order_number])
+           order = Spree::Order.find(params[:order_number]) rescue nil
            order = Spree::Order.find_by_number(params[:order_number]) if order.nil?
            if order.nil?
             @result = "Order not found"
