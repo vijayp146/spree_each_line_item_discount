@@ -15,6 +15,9 @@ module Spree
             @result = "Order not found"
            else
              @result = ShowLineItemDiscount.show_discount_for_each_line_items(order)
+             p "################"
+             p @result
+             p "###############"
            end
         end
 

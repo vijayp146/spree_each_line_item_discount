@@ -1,0 +1,22 @@
+
+<% result[1].each do |row| %>
+    <tr>
+      <% line_item = Spree::LineItem.find(row[:id]) %>
+      <td><%= row[:id] %></td>
+      <td><%= truncate(line_item.product.name, :length => 30) %></td>
+
+      <% if row[:type] == 'Discount' %>
+          <td style="background: greenyellow"><%= "#{row[:discount_amount]} (promotion applied)" %></td>
+      <% end %>
+
+      <% if row[:type] == 'Non Discount' %>
+          <td style="background: greenyellow"><%= row[:non_discount_amount] %></td>
+      <% end %>
+
+      <% if row[:type] == 'Non Promotion' %>
+          <td><%= row[:non_discount_amount] %></td>
+      <% end %>
+    </tr>
+
+    <br/>
+<% end %>

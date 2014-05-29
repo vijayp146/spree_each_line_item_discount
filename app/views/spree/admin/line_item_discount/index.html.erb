@@ -27,26 +27,37 @@
             <th>Name</th>
             <th>Discount</th>
           </tr>
-          <% @result.is_a?(Array) and @result.first.keys.each do |key| %>
-                <tr>
-                <% line_item = Spree::LineItem.find(key) %>
-                <td><%= key %></td>
-                <td><%= truncate(line_item.product.name, :length => 30) %></td>
 
-                <% if @result.first[key][:type] == 'Discount' %>
-                  <td style="background: greenyellow"><%= @result.first[key][:discount_amount] %></td>
+          <% @buy_one_offer = (@result[0][:type] == :buy_one_get_one)? true : false %>
+
+          <% if @buy_one_offer %>
+               <%= render  'buy_one_get_one', :result => @result %>
+           <% else %>
+
+                <% @result.is_a?(Array) and @result.first.keys.each do |key| %>
+                    <tr>
+                      <% line_item = Spree::LineItem.find(key) %>
+                      <td><%= key %></td>
+                      <td><%= truncate(line_item.product.name, :length => 30) %></td>
+
+                      <% if @result.first[key][:type] == 'Discount' %>
+                          <td style="background: greenyellow"><%= @result.first[key][:discount_amount] %></td>
+                      <% end %>
+
+                      <% if @result.first[key][:type] == 'Non Discount' %>
+                          <td style="background: greenyellow"><%= @result.first[key][:discount_amount] %></td>
+                      <% end %>
+
+                      <% if @result.first[key][:type] == 'Non Promotion' %>
+                          <td><%= @result.first[key][:non_discount_amount] %></td>
+                      <% end %>
+                    </tr>
+
+                    <br/>
                 <% end %>
-
-                  <% if @result.first[key][:type] == 'Non Discount' %>
-                      <td style="background: greenyellow">0<%#= @result.first[key][:discount_amount] %></td>
-                  <% end %>
-
-                 <% if @result.first[key][:type] == 'Non Promotion' %>
-                    <td><%= 0 %></td>
-                 <% end %>
-                </tr>
-                <br/>
           <% end %>
+
+
             <tr>
               <td></td> <td></td>
               <td><h4><%= @result.is_a?(Array) and @result.last[:promotion].values.first %></h4></td>

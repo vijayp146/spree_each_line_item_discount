@@ -93,9 +93,16 @@ module ShowLineItemDiscount
       sort_line_items = sort_line_items(valid_line_items)
       free_items = get_free_items(sort_line_items.size, sort_line_items, order)
 
-
       discount_items = sort_line_items.first(free_items[0])
-      non_discount_items = ( free_items[1] - discount_items)
+      discount_items_size = discount_items.size
+      non_discount_items = []
+      free_items[1].each_with_index do |free, i|
+         if i >= discount_items_size
+            non_discount_items.push(free)
+         end
+      end
+
+      #non_discount_items = ( free_items[1] - discount_items)
       discount = sort_line_items.first(free_items[0]).sum(&:last)
       buy_one_get_one_result = cal_free_and_paid_each_discount(discount_items, non_discount_items, discount, active_promotion )
 
@@ -135,7 +142,13 @@ module ShowLineItemDiscount
       free_items = get_free_items(sort_line_items.size, sort_line_items, order)
 
       discount_items = sort_line_items.first(free_items[0])
-      non_discount_items = ( free_items[1] - discount_items)
+      non_discount_items = []
+      free_items[1].each_with_index do |free, i|
+        if i <= discount_items.size
+          non_discount_items.push(free)
+        end
+      end
+      #non_discount_items = ( free_items[1] - discount_items)
       discount = sort_line_items.first(free_items[0]).sum(&:last)
       buy_one_get_one_result = cal_free_and_paid_each_discount(discount_items, non_discount_items, discount, active_promotion )
 
@@ -175,7 +188,13 @@ module ShowLineItemDiscount
 
 
       discount_items = sort_line_items.first(free_items[0])
-      non_discount_items = ( free_items[1] - discount_items)
+      non_discount_items = []
+      free_items[1].each_with_index do |free, i|
+        if i <= discount_items.size
+          non_discount_items.push(free)
+        end
+      end
+      #non_discount_items = ( free_items[1] - discount_items)
       discount = sort_line_items.first(free_items[0]).sum(&:last)
       buy_one_get_one_result = cal_free_and_paid_each_discount(discount_items, non_discount_items, discount, active_promotion )
 
@@ -206,10 +225,12 @@ module ShowLineItemDiscount
     @obj_arry = []
 
     line_items.inject([]) {|prices, li|
-      each_obj = []
-      each_obj.push(li.id)
-      each_obj.push(li.price.to_f * li.quantity)
-      @obj_arry << each_obj
+      li.quantity.times do |q|
+        each_obj = []
+        each_obj.push(li.id)
+        each_obj.push(li.price.to_f)
+        @obj_arry << each_obj
+      end
     }
     obj_arry = @obj_arry.sort {|a, b| a[1] <=> b[1]}
     obj_arry
@@ -218,25 +239,35 @@ module ShowLineItemDiscount
 
 
   def self.cal_free_and_paid_each_discount(discount_items, non_discount_items, discount, active_promotion )
-    buy_one_get_one_each_line_item_discount = {}
+    buy_one_get_one_each_line_item_discount = []
+    ids = []
 
     discount_items.each do  |discount_item|
       line_item = Spree::LineItem.find(discount_item[0])
-      buy_one_get_one_each_line_item_discount[discount_item[0]] =    {:type => "Discount" , :original_amount => (line_item.price.to_f * line_item.quantity), :discount_amount => "#{discount_item[1]}" }
+      ids <<  discount_item[0]
+      buy_one_get_one_each_line_item_discount <<   { :id => discount_item[0], :type => "Discount" , :original_amount => (line_item.price.to_f * line_item.quantity), :quantity => discount_items.size, :discount_amount => "#{discount_item[1]}" }
     end
 
     non_discount_items.each do  |non_discount_item|
       line_item = Spree::LineItem.find(non_discount_item[0])
-      buy_one_get_one_each_line_item_discount[non_discount_item[0]] = {:type => "Non Discount" , :original_amount => (line_item.price.to_f * line_item.quantity), :discount_amount => "#{non_discount_item[1]}" }
+      ids <<  non_discount_item[0]
+      buy_one_get_one_each_line_item_discount << { :id => non_discount_item[0] , :type => "Non Discount" , :original_amount => (line_item.price.to_f * line_item.quantity), :non_discount_amount => "#{non_discount_item[1]}" }
     end
 
     active_promotion.source.line_items.each do  |line_item|
-      unless buy_one_get_one_each_line_item_discount.include? line_item.id
-        buy_one_get_one_each_line_item_discount[line_item.id] = {:type => "Non Promotion" , :original_amount => (line_item.price.to_f * line_item.quantity), :discount_amount => "#{line_item.price}" }
+      unless ids.include? line_item.id
+        ids <<  line_item.id
+        buy_one_get_one_each_line_item_discount << {:id => line_item.id , :type => "Non Promotion" , :original_amount => (line_item.price.to_f * line_item.quantity), :non_discount_amount => "#{line_item.price}" }
       end
+
+      unless ids.include? line_item.id
+        ids <<  line_item.id
+        buy_one_get_one_each_line_item_discount << { :id => line_item.id, :type => "Non Promotion" , :original_amount => (line_item.price.to_f * line_item.quantity), :non_discount_amount => "#{line_item.price}" }
+      end
+
     end
 
-    [buy_one_get_one_each_line_item_discount, {:promotion => {"#{active_promotion.label}" => discount}   }]
+    [ {:type => :buy_one_get_one}, buy_one_get_one_each_line_item_discount, {:promotion => {"#{active_promotion.label}" => discount}   }]
 
   end
 
